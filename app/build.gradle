@@ -19,6 +19,7 @@ android {
     }
 }
 
+
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:23.0.0'
@@ -35,4 +36,5 @@ dependencies {
     compile files('libs/jackson-core-2.1.3.jar')
     compile files('libs/jsr305-1.3.9.jar')
     compile files('libs/ocpsoft-pretty-time-1.0.7.jar')
+    compile 'com.google.zxing:core:3.0.1'
 }

@@ -3,6 +3,7 @@
     package="com.future.citylines" >
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA"/>
 
     <application
         android:allowBackup="true"
@@ -22,7 +23,9 @@
 
         <activity
             android:name=".Navigation"
-            android:label="@string/title_activity_navigation" >
+            android:label="@string/title_activity_navigation"
+            >
+
         </activity>
     </application>
 
