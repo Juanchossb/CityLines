@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.Handler;
 
+import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -158,7 +159,7 @@ Handler handler;
                         final String logonegocio = resultset.getString("logo");
                         final String nnegocio = resultset.getString("nombre_negocio");
                         final Drawable bannerdrawable = new BitmapDrawable(util.getBitmap("http://104.197.16.226/images/ofertas/" + imgoferta));
-                        final Bitmap logobitmap = util.getBitmap("http://104.197.16.226/images/logos/" + logonegocio);
+                        final Bitmap logobitmap = util.getBitmap("http://23.251.149.115/images/logos/" + logonegocio);
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
@@ -195,9 +196,10 @@ Handler handler;
                         public void run() {
                             for (List<View> vista : linea) {
                                 int t=0;
-                                LinearLayout cadaseccion = new LinearLayout(ctx);
-                                cadaseccion.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-                                cadaseccion.setOrientation(LinearLayout.HORIZONTAL);
+                             //   List<View> cadaseccion = new ArrayList<View>();
+                               // LinearLayout cadaseccion = new LinearLayout(ctx);
+                               // cadaseccion.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                              //  cadaseccion.setOrientation(LinearLayout.HORIZONTAL);
                                 for (View view : vista){
                                     if (view instanceof TextView) {
 
@@ -313,10 +315,10 @@ updateOrder();
 
     //Listado de secciones
 
-
-    final LinearLayout lineahorizontal = new LinearLayout(ctx);
-    lineahorizontal.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-    lineahorizontal.setOrientation(LinearLayout.HORIZONTAL);
+    final List<View> lineahorizontal = new ArrayList<View>();
+   // final LinearLayout lineahorizontal = new LinearLayout(ctx);
+   // lineahorizontal.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+   // lineahorizontal.setOrientation(LinearLayout.HORIZONTAL);
 
 
     try {
@@ -397,7 +399,7 @@ lineaimgingre.setTag(idproducto);
 
             if (imagen != null) {
                 imagenproducto.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, util.screenSizeY(ctx) / 3));
-                String imgurl = "http://104.197.16.226/images/productos/" + imagen;
+                String imgurl = "http://23.251.149.115/images/productos/" + imagen;
                 Drawable prod = new BitmapDrawable(util.getBitmap(imgurl));
                 imagenproducto.setBackground(prod);
             }
@@ -498,7 +500,7 @@ lineaimgingre.setTag(idproducto);
             imagenproducto.setTag(counttag);
             counttag++;
             imagenproducto.setTag(505);
-            imagenproducto.setOnTouchListener(this);
+            //imagenproducto.setOnTouchListener(this);
           //  vistas.add(imagenproducto);
 
          // cadaseccion.addView(imagenproducto);
@@ -647,20 +649,23 @@ lineaimgingre.setTag(idproducto);
             lineaimgingre.addView(imagenproducto);
             lineaimgingre.addView(lineapersonalizacion);
             lineaimgingre.addView(lineaextras);
-            lineaimgingre.setVisibility(View.GONE);
+        //    lineaimgingre.setVisibility(View.GONE);
            // lineaimgingre.setVisibility(View.GONE);
             //lineaimgingre.setOnTouchListener(this);
-            lineahorizontal.addView(lineaimgingre);
+            lineahorizontal.add(lineaimgingre);
 
 
         }
-        lineahorizontal.getChildAt(0).setVisibility(View.VISIBLE);
+        lineahorizontal.get(0).setVisibility(View.VISIBLE);
        // lineaimgingre.setVisibility(View.GONE);
         lineaproductos.post(new Runnable() {
             @Override
             public void run() {
+                ViewPager viewpager = new ViewPager(ctx);
+                viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),util.screenSizeY(ctx)/3));
+                viewpager.setAdapter(new PagerAdapter(ctx,lineahorizontal));
 
-                lineaproductos.addView(lineahorizontal);
+                lineaproductos.addView(viewpager);
 
             }
         });
@@ -951,7 +956,7 @@ updateOrder();
                     //Ingredientes
                     if (precios_productos.get(c).get(v).get(b)[3].equals(tipo)) {
                         String ID = precios_productos.get(c).get(v).get(b)[0];
-                        String PRICE = precios_productos.get(c).get(v).get(b)[1].replace("$", "").replace(".", "");
+                        String PRICE = precios_productos.get(c).get(v).get(b)[1].replace("$", "").replace(".", "").replace(",","");
                         String DESCUENTO = precios_productos.get(c).get(v).get(b)[2];
 
 
