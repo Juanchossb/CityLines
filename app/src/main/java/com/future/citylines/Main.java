@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -56,10 +57,19 @@ final Database db =new Database();
                     //Obtenemos la Base de datos y comparamos
                   final Dialog dialog = util.loadingDialog(Main.this,"Validando");
                     dialog.show();
+                   String passrn = null;
+                    /*
+                    try {
+                        passrn = util.getSHA512(pass);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    */
+                    final String finalUsern = passrn;
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            ResultSet rs = db.executeQuery("select * from usuario where usuario = '"+user+"' and password = '"+pass+"'");
+                            ResultSet rs = db.executeQuery("select * from usuario where usuario = '"+ user +"' and password = '"+pass+"'");
 
                             try {
                                 if (rs != null) {

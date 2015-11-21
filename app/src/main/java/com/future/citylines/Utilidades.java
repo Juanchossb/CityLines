@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.os.Environment;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
@@ -16,9 +17,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Created by future on 1/09/15.
@@ -123,5 +129,39 @@ public class Utilidades {
 
 
     }
+    public String getSHA512(String texto) throws IOException {
+
+        String PATHTOFILE = Environment.getExternalStorageDirectory()
+                .getAbsolutePath();
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        File mydir = new File(PATHTOFILE);
+        mydir.mkdir();
+        File myfile = new File(PATHTOFILE+"/citylines.log");
+        myfile.createNewFile();
+        FileInputStream fis = new FileInputStream(myfile);
+
+        byte[] dataBytes = texto.getBytes();
+
+        int nread = 0;
+        while ((nread = fis.read(dataBytes)) != -1) {
+            md.update(dataBytes, 0, nread);
+        };
+        byte[] mdbytes = md.digest();
+
+        //convert the byte to hex format method 1
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < mdbytes.length; i++) {
+            sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+        }
+
+
+        return sb.toString();
+    }
+
 
 }

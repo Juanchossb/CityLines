@@ -1,6 +1,10 @@
 package com.future.citylines;
 
 import android.app.Activity;
+import android.app.SearchManager;
+import android.content.Intent;
+import android.graphics.Color;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -16,6 +20,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
+import android.widget.SearchView;
 import android.widget.TextView;
 
 public class Navigation extends AppCompatActivity
@@ -33,7 +42,11 @@ public class Navigation extends AppCompatActivity
 
     Ofertas ofertas ;
     Perfil perfil;
+    Redimir redimir;
     String USER_ID;
+    LinearLayout LINEACONSTANTE;
+    Button botonhome,botonexp,botonperfil;
+    Utilidades util;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,16 +55,41 @@ public class Navigation extends AppCompatActivity
 
         ofertas = new Ofertas();
         perfil = new Perfil();
-
-        USER_ID = getIntent().getStringExtra("id");
+        redimir = new Redimir();
+        USER_ID = "1";
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
         mTitle = getTitle();
+
+        util= new Utilidades();
+
+        LinearLayout.LayoutParams frameparams = new LinearLayout.LayoutParams(util.screenSizeX(this)/5,util.screenSizeY(this)/10);
+        frameparams.setMargins(util.screenSizeX(this)/10,5,0,5);
+
+        RelativeLayout.LayoutParams relativeparams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+      //  relativeparams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+
+
+        LINEACONSTANTE = (LinearLayout) findViewById(R.id.lineaconstante);
+LINEACONSTANTE.setPadding(0,0,0,5);
+     //   LINEACONSTANTE.setLayoutParams(relativeparams);
+        botonhome = (Button) findViewById(R.id.botonhome);
+        botonhome.setLayoutParams(frameparams);
+        botonexp= (Button) findViewById(R.id.botonexperiencias);
+        botonexp.setLayoutParams(frameparams);
+        botonexp.setTextSize(8);
+        botonperfil = (Button) findViewById(R.id.botonexperiencias);
+        botonperfil.setLayoutParams(frameparams);
+        LINEACONSTANTE.setBackgroundColor(Color.parseColor("#ffffff"));
+        LINEACONSTANTE.setAlpha(1/2);
+
+
 
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
                 R.id.navigation_drawer,
                 (DrawerLayout) findViewById(R.id.drawer_layout));
+
     }
 
     @Override
@@ -71,6 +109,13 @@ public class Navigation extends AppCompatActivity
             fragmentManager.beginTransaction()
                     .replace(R.id.container, perfil.newInstance(position + 1))
                     .commit();
+        }else if(position == 2){
+            Bundle args2 = new Bundle();
+            args2.putString("userid", USER_ID);
+            redimir.setArguments(args2);
+            fragmentManager.beginTransaction()
+                    .replace(R.id.container, redimir.newInstance(position + 1))
+                    .commit();
         }
     }
 
@@ -85,7 +130,7 @@ public class Navigation extends AppCompatActivity
                 mTitle = "Perfil";
                 break;
             case 3:
-                mTitle = getString(R.string.title_section3);
+                mTitle = "Redimir";
                 break;
         }
     }
@@ -109,6 +154,25 @@ public class Navigation extends AppCompatActivity
             // decide what to show in the action bar.
             getMenuInflater().inflate(R.menu.navigation, menu);
             restoreActionBar();
+            SearchManager searchManager =
+                    (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+            MenuItem smenuitem = menu.findItem(R.id.search);
+    //        android.support.v7.widget.SearchView searchView =(android.support.v7.widget.SearchView) MenuItemCompat.getActionView(smenuitem);
+          /*  searchView.setSearchableInfo(
+                    searchManager.getSearchableInfo(getComponentName()));
+
+            searchView.setOnQueryTextListener(new android.support.v7.widget.SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    return false;
+                }
+
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    return false;
+                }
+            });
+*/
             return true;
         }
         return super.onCreateOptionsMenu(menu);
@@ -166,6 +230,12 @@ public class Navigation extends AppCompatActivity
             super.onAttach(activity);
             ((Navigation) activity).onSectionAttached(
                     getArguments().getInt(ARG_SECTION_NUMBER));
+        }
+
+        @Override
+        public void onActivityResult(int requestCode, int resultCode, Intent data) {
+            super.onActivityResult(requestCode, resultCode, data);
+
         }
     }
 

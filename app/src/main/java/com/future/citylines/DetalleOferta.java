@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import android.support.v4.view.ViewPager;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -27,6 +28,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -65,18 +71,20 @@ Handler handler;
     List<List<View>> linea;
     List<List<Double>> preciosfinales;
     List<List<Double>> preciosanteriores;
-
+    ArrayList<String> producto_lista,ingrediente_lista;
     List<List<List<String[]>>> precios_productos;
     String ORDER_QUERY= null;
 
     List<String[]> ingrediente_tipo;
 
-    Button botoncomprar;
+    Button botoncomprar,botoncompartir,botonregalar;
 
     Dialog loading;
+    String TIPO_NAVEGACION;
 
     public static DetalleOferta newInstance(int sectionNumber) {
         DetalleOferta fragment = new DetalleOferta();
+
         Bundle args = new Bundle();
         args.putInt(ARG_SECTION_NUMBER, sectionNumber);
         fragment.setArguments(args);
@@ -93,6 +101,7 @@ Handler handler;
        // setContentView(R.layout.detalleoferta);
         View rootView = inflater.inflate(R.layout.detalleoferta, container, false);
 
+        TIPO_NAVEGACION = getArguments().getString("TIPO_NAVEGACION");
         ctx = getActivity().getApplicationContext();
         util =new Utilidades();
         db = new Database();
@@ -101,7 +110,7 @@ Handler handler;
         lista_query_ingredientes = new ArrayList<String>();
         ingrediente_tipo = new ArrayList<String[]>();
         Intent intent = getActivity().getIntent();
-       ID_OFERTA = intent.getStringExtra("id");
+       ID_OFERTA = getArguments().getString("id");
         listaproductos = new ArrayList<List<LinearLayout>>();
         //Inicializar las vistas del layout
         detallebanner = (LinearLayout) rootView.findViewById(R.id.detalleimg);
@@ -127,12 +136,29 @@ Handler handler;
         nombreoferta.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, util.screenSizeX(ctx) / 10));
 
         botoncomprar = (Button) rootView.findViewById(R.id.btncomparar);
+        botoncompartir = (Button) rootView.findViewById(R.id.btncompartir);
+        botonregalar = (Button) rootView.findViewById(R.id.btnregalar);
 
        // lineaconstante.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,util.screenSizeY(this)/7));
         lineaconstante.setBackgroundColor(Color.LTGRAY);
         loading = util.loadingDialog(ctx,"Por faqvor Espere...");
         final String query_oferta = "select a.nombre_oferta, a.imagen_oferta, a.id_negocio, a.descripcion_oferta,a.subtotal_oferta,a.total_oferta, a.descuento, b.logo, b.nombre_negocio from oferta as a, negocio as b where b.id = a.id_negocio and a.id = "+ID_OFERTA;
 
+        if (TIPO_NAVEGACION.equals("redimir")){
+            producto_lista = getArguments().getStringArrayList("listaproductos");
+            ingrediente_lista = getArguments().getStringArrayList("listaingredientes");
+            final String idorden = getArguments().getString("ordenid");
+
+            botoncomprar.setVisibility(View.GONE);
+            botonregalar.setText("Redimir");
+            botonregalar.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Dialog dialogo = dialogoRedimir(idorden);
+                    dialogo.show();
+                }
+            });
+        }
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -158,21 +184,27 @@ Handler handler;
 
                         final String logonegocio = resultset.getString("logo");
                         final String nnegocio = resultset.getString("nombre_negocio");
-                        final Drawable bannerdrawable = new BitmapDrawable(util.getBitmap("http://104.197.16.226/images/ofertas/" + imgoferta));
-                        final Bitmap logobitmap = util.getBitmap("http://23.251.149.115/images/logos/" + logonegocio);
-                        handler.post(new Runnable() {
+                        new Thread(new Runnable() {
                             @Override
                             public void run() {
-                                nombreoferta.setText(noferta);
-                                nombrenegocio.setText(nnegocio);
-                                textodescripcion.setText(descoferta);
-                                texttotal.setText("$"+total);
-                                textsubtotal.setText("$"+subtotal);
+                                final Drawable bannerdrawable = new BitmapDrawable(util.getBitmap("http://23.251.149.115/images/ofertas/" + imgoferta));
+                                final Bitmap logobitmap = util.getBitmap("http://23.251.149.115/images/logos/" + logonegocio);
+                                handler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        nombreoferta.setText(noferta);
+                                        nombrenegocio.setText(nnegocio);
+                                        textodescripcion.setText(descoferta);
+                                        texttotal.setText("$"+total);
+                                        textsubtotal.setText("$"+subtotal);
 
-                                detallebanner.setBackground(bannerdrawable);
-                                logooferta.setImageBitmap(logobitmap);
+                                        detallebanner.setBackground(bannerdrawable);
+                                        logooferta.setImageBitmap(logobitmap);
+                                    }
+                                });
+
                             }
-                        });
+                        }).start();
 
                     }
                 } catch (SQLException e) {
@@ -287,6 +319,62 @@ updateOrder();
         });
         return  rootView;
     }
+    public Dialog dialogoRedimir(String id){
+        String orderid="citylines-"+id;
+        Dialog dialog = new Dialog(getActivity());
+        LinearLayout lineadialog = new LinearLayout(ctx);
+        lineadialog.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        lineadialog.setOrientation(LinearLayout.VERTICAL);
+        lineadialog.setGravity(Gravity.CENTER);
+
+        LinearLayout linea1 = new LinearLayout(ctx);
+        linea1.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        linea1.setOrientation(LinearLayout.HORIZONTAL);
+
+        TextView labelorder = new TextView(ctx);
+        labelorder.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        labelorder.setText("ID de la Orden:      ");
+
+        TextView textoorden = new TextView(ctx);
+        textoorden.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        textoorden.setText(orderid);
+
+        linea1.addView(labelorder);
+        linea1.addView(textoorden);
+
+        TextView textoscan = new TextView(ctx);
+        textoscan.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        textoscan.setText("O escanea el siguiente codigo:");
+
+        ImageView codigoqr = new ImageView(ctx);
+        codigoqr.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx)/2, util.screenSizeY(ctx)/2));
+        codigoqr.setScaleType(ImageView.ScaleType.FIT_XY);
+        lineadialog.addView(linea1);
+        lineadialog.addView(textoscan);
+        lineadialog.addView(codigoqr);
+
+
+        QRCodeWriter writer = new QRCodeWriter();
+        try {
+            BitMatrix bitMatrix = writer.encode(orderid, BarcodeFormat.QR_CODE, util.screenSizeX(ctx)/2, util.screenSizeY(ctx)/2);
+            int width = bitMatrix.getWidth();
+            int height = bitMatrix.getHeight();
+            Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+            for (int x = 0; x < width; x++) {
+                for (int y = 0; y < height; y++) {
+                    bmp.setPixel(x, y, bitMatrix.get(x, y) ? Color.BLACK : Color.WHITE);
+                }
+            }
+            // ((ImageView) findViewById(R.id.img_result_qr)).setImageBitmap(bmp);
+            codigoqr.setImageBitmap(bmp);
+        } catch (WriterException e) {
+            e.printStackTrace();
+        }
+        dialog.setContentView(lineadialog);
+
+        return  dialog;
+
+    }
     public List<List<View>> CadaProducto(String id_oferta) throws SQLException {
 
         List<List<String[]>> cadalista = new ArrayList<List<String[]>>();
@@ -322,6 +410,8 @@ updateOrder();
 
 
     try {
+        final ViewPager viewpager = new ViewPager(ctx);
+        viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),util.screenSizeY(ctx)/3));
         String seccion = null;
         int counttag = 0;
         while (resultSet.next()) {
@@ -399,9 +489,21 @@ lineaimgingre.setTag(idproducto);
 
             if (imagen != null) {
                 imagenproducto.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, util.screenSizeY(ctx) / 3));
-                String imgurl = "http://23.251.149.115/images/productos/" + imagen;
-                Drawable prod = new BitmapDrawable(util.getBitmap(imgurl));
-                imagenproducto.setBackground(prod);
+                final String imgurl = "http://23.251.149.115/images/productos/" + imagen;
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        final Drawable prod = new BitmapDrawable(util.getBitmap(imgurl));
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                imagenproducto.setBackground(prod);
+                            }
+                        });
+
+                    }
+                }).start();
+
             }
             //Linea horizontal que contiene los texviews del nombre del producto y el precio
             LinearLayout lineainfoprod = new LinearLayout(ctx);
@@ -536,6 +638,7 @@ lineaimgingre.setTag(idproducto);
                 checkingre.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx) / 2, ViewGroup.LayoutParams.WRAP_CONTENT));
                 checkingre.setText(result_extras.getString("nombre_ingrediente") + " $" + result_extras.getString("precio_ingrediente"));
                 checkingre.setTag(result_extras.getString("id"));
+                checkingre.setTextColor(Color.BLACK);
 
 
                 if (result_extras.getString("incluido").equals("si")){
@@ -577,6 +680,7 @@ lineaimgingre.setTag(idproducto);
                 ingretitulo.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
                 ingretitulo.setTextSize(20);
+                ingretitulo.setTextColor(Color.BLACK);
 
                 cadaingre.addView(ingretitulo);
 
@@ -594,7 +698,12 @@ lineaimgingre.setTag(idproducto);
                     final CheckBox checkingre = new CheckBox(ctx);
                     checkingre.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx) / 2, ViewGroup.LayoutParams.WRAP_CONTENT));
                     checkingre.setText(resultingre.getString("nombre_ingrediente"));
-                    checkingre.setTag(resultingre.getString("id"));
+                    try {
+                        checkingre.setTag(resultingre.getString("id"));
+                    }catch (NullPointerException e){
+
+                    }
+                    checkingre.setTextColor(Color.BLACK);
                     listacheck.add(checkingre);
 
                     checkingre.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -610,15 +719,38 @@ lineaimgingre.setTag(idproducto);
                         }
                     });
                     //vistas.add(checkingre);
-                    cadaingre.addView(checkingre);
+                    if(TIPO_NAVEGACION.equals("redimir")) {
+                    boolean issettitulo = false;
+                    for (String ingretmp :ingrediente_lista){
+                        if (ingretmp != null) {
+                            if (ingretmp.equals(checkingre.getTag().toString())) {
+                                issettitulo = true;
+                                break;
+                            }
+                        }
+                    }
+
+                        if (issettitulo) {
+                            checkingre.setChecked(true);
+                            cadaingre.addView(checkingre);
+                        }else{
+                            checkingre.setVisibility(View.GONE);
+                        }
+                    }else {
+                        cadaingre.addView(checkingre);
+                    }
                     cadaingre.setOnTouchListener(this);
 
 
                 }
-                ((CheckBox) cadaingre.getChildAt(1)).setChecked(true);
-                // cadaingre.setVisibility(View.GONE);
-                lineapersonalizacion.addView(cadaingre);
-                lineapersonalizacion.setTag(606);
+                try {
+                    ((CheckBox) cadaingre.getChildAt(1)).setChecked(true);
+                    // cadaingre.setVisibility(View.GONE);
+                    lineapersonalizacion.addView(cadaingre);
+                    lineapersonalizacion.setTag(606);
+                }catch (NullPointerException e){
+                    e.printStackTrace();
+                }
 
                 ls.add(listacheck);
             }
@@ -630,6 +762,10 @@ lineaimgingre.setTag(idproducto);
                         //noinspection ResourceType
                         lineapersonalizacion.setVisibility(toggleVisibility(lineapersonalizacion.getVisibility()));
                         lineaextras.setVisibility(View.GONE);
+                        if (lineapersonalizacion.getVisibility()==View.VISIBLE)
+                        viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),(2*util.screenSizeY(ctx))/3));
+                        else
+                            viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),util.screenSizeY(ctx)/3));
                     }
                 });
             }
@@ -640,6 +776,10 @@ lineaimgingre.setTag(idproducto);
                         //noinspection ResourceType
                         lineaextras.setVisibility(toggleVisibility(lineaextras.getVisibility()));
                         lineapersonalizacion.setVisibility(View.GONE);
+                        if (lineaextras.getVisibility()==View.VISIBLE)
+                            viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),(2*util.screenSizeY(ctx))/3));
+                        else
+                            viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),util.screenSizeY(ctx)/3));
                     }
                 });
 
@@ -652,17 +792,28 @@ lineaimgingre.setTag(idproducto);
         //    lineaimgingre.setVisibility(View.GONE);
            // lineaimgingre.setVisibility(View.GONE);
             //lineaimgingre.setOnTouchListener(this);
-            lineahorizontal.add(lineaimgingre);
 
+            boolean idisset = false;
+            if (TIPO_NAVEGACION.equals("redimir")) {
+                for (String plista : producto_lista) {
+                    if (plista.equals(idproducto)) {
+                        idisset = true;
+                        break;
+                    }
+                }
+                if (idisset)
+                    lineahorizontal.add(lineaimgingre);
 
+            }else{
+                lineahorizontal.add(lineaimgingre);
+            }
         }
-        lineahorizontal.get(0).setVisibility(View.VISIBLE);
+       // lineahorizontal.get(0).setVisibility(View.VISIBLE);
        // lineaimgingre.setVisibility(View.GONE);
         lineaproductos.post(new Runnable() {
             @Override
             public void run() {
-                ViewPager viewpager = new ViewPager(ctx);
-                viewpager.setLayoutParams(new LinearLayout.LayoutParams(util.screenSizeX(ctx),util.screenSizeY(ctx)/3));
+
                 viewpager.setAdapter(new PagerAdapter(ctx,lineahorizontal));
 
                 lineaproductos.addView(viewpager);

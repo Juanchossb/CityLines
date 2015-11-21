@@ -1,96 +1,146 @@
 package com.future.citylines;
 
-
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.encoder.QRCode;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Created by future on 7/10/15.
+ * Created by future on 29/10/15.
  */
-public class Perfil extends Fragment {
+public class Redimir extends Fragment {
     private static final String ARG_SECTION_NUMBER = "section_number";
     Context ctx;
-
-    TextView titulonombre,titulotelefono,tituloemail,contenidonombre,contenidotelefono,contenidoemail;
-    LinearLayout lineapendiente,lineapasado;
     String USER_ID;
-    Utilidades util;
     Database db;
     Handler handler;
-
-    public static Perfil newInstance(int sectionNumber) {
-        Perfil fragment = new Perfil();
+    Utilidades util;
+    LinearLayout lineapendiente;
+    Button escanbuton;
+    public static Redimir newInstance(int sectionNumber) {
+        Redimir fragment = new Redimir();
         Bundle args = new Bundle();
         args.putInt(ARG_SECTION_NUMBER, sectionNumber);
         fragment.setArguments(args);
         return fragment;
+
     }
-    public Perfil(){
+    public Redimir(){
 
     }
 
+    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // setContentView(R.layout.detalleoferta);
-        View rootView = inflater.inflate(R.layout.perfil, container, false);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.redimir, container, false);
+
         ctx = getActivity().getApplicationContext();
         Intent intent = getActivity().getIntent();
-
-     Bundle args = getArguments();
-       //int index = args.getInt("index", 0);
-        USER_ID = ((Navigation) getActivity()).getUserId();
-        util = new Utilidades();
-        db = new Database();
         handler = new Handler();
+        lineapendiente= (LinearLayout) rootView.findViewById(R.id.lineapendientes);
+        db=new Database();
+        util = new Utilidades();
+        USER_ID = getArguments().getString("userid");
+        escanbuton =(Button) rootView.findViewById(R.id.escanear);
 
-        titulonombre = (TextView) rootView.findViewById(R.id.titulonombre);
-        titulotelefono = (TextView) rootView.findViewById(R.id.titultelefono);
-        tituloemail = (TextView) rootView.findViewById(R.id.tituloemail);
-        contenidonombre = (TextView) rootView.findViewById(R.id.contenidonombre);
-        contenidotelefono = (TextView) rootView.findViewById(R.id.contenidotelefono);
-        contenidoemail = (TextView) rootView.findViewById(R.id.contenidoemail);
-
-        lineapendiente = (LinearLayout) rootView.findViewById(R.id.lineapendientes);
-        lineapasado = (LinearLayout) rootView.findViewById(R.id.lineapasados);
-
-
-
-        new Thread(new Runnable() {
+        escanbuton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void run() {
-                updatePersonalInfo();
-            }
-        }).start();
+            public void onClick(View v) {
+/*
+    Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+    intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
+    startActivityForResult(intent,0);
+/*
+                Intent intent = new Intent("com.google.zxing.client.android.SCAN");
+                intent.putExtra("SCAN_MODE", "QR_CODE_MODE");
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                updatePendientes();
+              startActivityForResult(intent, 0); */
+
+                IntentIntegrator integrator = new IntentIntegrator(getActivity());
+                integrator.initiateScan();
             }
-        }).start();
+        });
+
+
+new Thread(new Runnable() {
+    @Override
+    public void run() {
+        updatePendientes();
+    }
+}).start();
 
         return rootView;
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+        if (scanResult != null) {
+            // handle scan result
+        }
+        // else continue with any other code you need in the method
+
+    }
+
+//retrieve scan result
+     //   super.onActivityResult(requestCode, resultCode, intent);
+/*
+        if (requestCode == 0) {
+            if (resultCode == getActivity().RESULT_OK) {
+                String contents = intent.getStringExtra("SCAN_RESULT");
+                String format = intent.getStringExtra("SCAN_RESULT_FORMAT");
+                // Handle successful scan
+            } else if (resultCode == getActivity().RESULT_CANCELED) {
+                // Handle cancel
+            }
+        }
+
+        /*
+        IntentIntegrator integrator = new IntentIntegrator(getActivity());
+        integrator.initiateScan();
+       */ //IntentResult scanningResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+
+        /*
+        if (scanningResult != null) {
+
+
+        }else{
+            Toast toast = Toast.makeText(ctx,
+                    "No scan data received!", Toast.LENGTH_SHORT);
+            toast.show();
+        }
+        */
+    //}
+
     public void updatePendientes(){
-        String pendientes_query = "select c.nombre_negocio,b.nombre_oferta,b.descripcion_oferta,b.subtotal_oferta,b.total_oferta,b.descuento,a.fecha_orden,a.id,a.id_oferta from orden as a, oferta as b, negocio as c where c.id = b.id_negocio and b.id=a.id_oferta and a.estado_orden = 'activa' and a.id_usuario = "+USER_ID;
+        String pendientes_query = "select c.nombre_negocio,b.nombre_oferta,b.descripcion_oferta,b.subtotal_oferta,b.total_oferta,b.descuento,a.fecha_orden,a.id,a.id_oferta from orden as a, oferta as b, negocio as c where c.id = b.id_negocio and b.id=a.id_oferta and a.estado_orden = 'activa' and a.id_negocio = 1";
+
         ResultSet resultset = db.executeQuery(pendientes_query);
 
         final TextView tituloseccion = new TextView(ctx);
@@ -102,7 +152,7 @@ public class Perfil extends Fragment {
         lineapendiente.post(new Runnable() {
             @Override
             public void run() {
-           lineapendiente.addView(tituloseccion);
+                lineapendiente.addView(tituloseccion);
             }
         });
 
@@ -181,7 +231,6 @@ public class Perfil extends Fragment {
 
                                 bundle.putStringArrayList("listaproductos",listaproductos);
                                 bundle.putStringArrayList("listaingredientes",listaingredientes);
-                                bundle.putString("ordenid",orden_id);
                                 detalleoferta.setArguments(bundle);
                                 handler.post(new Runnable() {
                                     @Override
@@ -216,34 +265,6 @@ public class Perfil extends Fragment {
         } catch (SQLException e) {
             e.printStackTrace();
         }catch (NullPointerException e){
-            e.printStackTrace();
-        }
-
-
-    }
-
-    public void updatePersonalInfo(){
-
-        String personal_query = "select a.nombres_persona,a.apellidos_persona,a.telefono,b.email from datos_personal as a, usuario as b where a.id_usuario=b.id and b.id = "+USER_ID;
-        final ResultSet resultset = db.executeQuery(personal_query);
-
-        try {
-            while(resultset.next()){
-                final String nombres = resultset.getString("nombres_persona");
-                final String apellidos = resultset.getString("apellidos_persona");
-                final String email = resultset.getString("email");
-                final String telefono = resultset.getString("telefono");
-            lineapendiente.post(new Runnable() {
-                @Override
-                public void run() {
-                        contenidonombre.setText(nombres+" "+apellidos);
-                        contenidotelefono.setText(telefono);
-                        contenidoemail.setText(email);
-                }
-            });
-
-            }
-        } catch (SQLException e) {
             e.printStackTrace();
         }
 
